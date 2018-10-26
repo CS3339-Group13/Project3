@@ -1,9 +1,8 @@
 import sys
 from Disassembler import Disassembler
 from WriteBackUnit import WriteBackUnit
-
-
-# Buffer design
+from ALU import ALU
+from ControlUnit import ControlUnit
 
 
 class SimplifiedSuperScalarSimulator:
@@ -13,21 +12,33 @@ class SimplifiedSuperScalarSimulator:
         self.__memory = data
         self.__outfile = outfile
 
+        self.__cu = ControlUnit()
         self.__wb = WriteBackUnit()
+        self.__alu = ALU()
 
-        self.__post_mem = {
-            'reg_id' : soneID,
-            'memValue' : value
+        # Buffers
+        self.__pre_alu = {
+            'inst id': None,
+            'arg1': None,
+            'arg2': None,
+            'dest reg': None
         }
-
+        self.__post_mem = {
+            'inst id': None,
+            'dest reg': None,
+            'value': None
+        }
         self.__post_alu = {
-            'instruction' : something,
-            'reg_id' : someID,
-            'result' : maths
+            'inst id': None,
+            'dest reg': None,
+            'value': None
         }
 
     def run(self):
-        self.__wb.pull(self.__post_mem, self.__post_alu)
+        for inst in self.__instructions:
+            control = self.__cu.run(inst)
+            self.__wb.run(self.__post_mem, self.__post_alu)
+            self.__alu.run(self.__pre_alu, control['alu op'])
 
 
 if __name__ == "__main__":
