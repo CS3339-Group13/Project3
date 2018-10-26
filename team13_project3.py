@@ -16,10 +16,14 @@ class SimplifiedSuperScalarSimulator:
         self.__wb = WriteBackUnit()
 
         self.__post_mem = {
-
+            'reg_id' : soneID,
+            'memValue' : value
         }
-        self.__post_alu = {
 
+        self.__post_alu = {
+            'instruction' : something,
+            'reg_id' : someID,
+            'result' : maths
         }
 
     def run(self):

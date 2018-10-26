@@ -5,3 +5,8 @@ class WriteBackUnit:
 
     def pull(self, post_mem, post_alu):
         pass
+
+        #fetch post alu
+        #tetch post mem
+
+        #update register
