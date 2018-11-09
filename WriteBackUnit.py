@@ -3,10 +3,18 @@ class WriteBackUnit:
     def __init__(self):
         pass
 
-    def run(self, post_mem, post_alu):
-        r1 = post_mem['dest reg']
-        val1 = post_mem['value']
-        r2 = post_alu['dest reg']
-        val2 = post_mem['value']
+    def run(self, wb_in):
 
-        # Write to registers???
+        inst_id = wb_in[0]['id']
+        dest1 = wb_in[0]['dest']
+        value1 = wb_in[0]['value']
+
+        dest2 =  wb_in[1]['dest']
+        value2 = wb_in[1]['value']
+
+        return {
+            'dest1': dest1,
+            'value1': value1,
+            'dest2': dest2,
+            'value2': value2
+        }

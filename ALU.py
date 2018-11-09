@@ -3,19 +3,17 @@ class ALU:
     def __init__(self):
         pass
 
-    # self.__pre_alu = {
-    #     'inst id': None,
-    #     'arg1': None,
-    #     'arg2': None,
-    #     'dest reg': None
-    # }
-    def run(self, pre, op):
+    def run(self, alu_in, control):
+        arg1 = alu_in['arg1']  # rn_val
+        arg2 = alu_in['arg2']  # rm_val
+
+        op = control['name']
         f = getattr(self, 'op_' + op.lower())
 
         return {
-            'inst id': pre['inst id'],
-            'dest reg': pre['dest reg'],
-            'value': f()
+            'id': alu_in['id'],
+            'dest': alu_in['dest'],
+            'val': f(arg1, arg2)
         }
 
     @staticmethod

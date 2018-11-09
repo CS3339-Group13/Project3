@@ -2,12 +2,16 @@ import sys
 from Disassembler import Disassembler
 from WriteBackUnit import WriteBackUnit
 from ALU import ALU
+from MemoryUnit import MemoryUnit
 from ControlUnit import ControlUnit
+from Queue import Queue
 
 
 class SimplifiedSuperScalarSimulator:
 
-    def __init__(self, inst, data, outfile):
+    def __init__(self, inst, data, outfile, num_registers=32):
+        self.__pc = 96
+
         self.__instructions = inst
         self.__memory = data
         self.__outfile = outfile
@@ -15,30 +19,59 @@ class SimplifiedSuperScalarSimulator:
         self.__cu = ControlUnit()
         self.__wb = WriteBackUnit()
         self.__alu = ALU()
+        self.__mem = MemoryUnit()
+
+        self.__register_file = [0] * num_registers
 
         # Buffers
-        self.__pre_alu = {
-            'inst id': None,
-            'arg1': None,
-            'arg2': None,
-            'dest reg': None
-        }
-        self.__post_mem = {
-            'inst id': None,
-            'dest reg': None,
-            'value': None
-        }
-        self.__post_alu = {
-            'inst id': None,
-            'dest reg': None,
-            'value': None
-        }
+        self.__pre_issue_buffer = Queue()
+
+        self.__pre_mem_buffer = Queue()
+
+        # arg1, arg2
+        self.__pre_alu_buffer = Queue()
+
+        # inst id, value, dest
+        self.__post_mem_buffer = Queue()
+
+        # inst id, value
+        self.__post_alu_buffer = Queue()
 
     def run(self):
         for inst in self.__instructions:
+
+            # Get control signals
             control = self.__cu.run(inst)
-            self.__wb.run(self.__post_mem, self.__post_alu)
-            self.__alu.run(self.__pre_alu, control['alu op'])
+
+            # Run WriteBackUnit
+            wb_in = (self.__post_mem_buffer.get(), self.__post_alu_buffer.get())
+            wb_out = self.__wb.run(wb_in)
+            self.__write_register(wb_out['dest1'], wb_out['value1'])
+            self.__write_register(wb_out['dest2'], wb_out['value2'])
+
+            # Run ALU
+            alu_in = self.__pre_alu_buffer.get()
+            alu_out = self.__alu.run(alu_in, control)
+            self.__post_alu_buffer.put(alu_out)
+
+            # Run MemoryUnit
+            mem_in = self.__pre_mem_buffer.get()
+            mem_out = self.__mem.run(mem_in, control)
+            self.__post_mem_buffer.put(mem_out)
+
+            # Run Issue Unit
+
+            # Run IF Unit
+
+
+
+    def __write_register(self, r, val):
+        if r is None or val is None:
+            pass
+        self.__register_file[r] = val
+
+    def __read_cache(self, addr):
+
 
 
 if __name__ == "__main__":
