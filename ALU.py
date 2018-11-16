@@ -3,17 +3,18 @@ class ALU:
     def __init__(self):
         pass
 
-    def run(self, alu_in, control):
-        arg1 = alu_in['arg1']  # rn_val
-        arg2 = alu_in['arg2']  # rm_val
+    def run(self, alu_in):
+        arg1 = alu_in['rn']
+        # If no shamt, use rm, otherwise use shamt
+        arg2 = alu_in['rm'] if alu_in['shamt'] is None else alu_in['shamt']
 
-        op = control['name']
+        op = alu_in['op']
         f = getattr(self, 'op_' + op.lower())
 
         return {
             'id': alu_in['id'],
-            'dest': alu_in['dest'],
-            'val': f(arg1, arg2)
+            'rd': alu_in['rd'],
+            'value': f(arg1, arg2)
         }
 
     @staticmethod

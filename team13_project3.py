@@ -3,8 +3,10 @@ from Disassembler import Disassembler
 from WriteBackUnit import WriteBackUnit
 from ALU import ALU
 from MemoryUnit import MemoryUnit
-from ControlUnit import ControlUnit
 from Queue import Queue
+from RegisterFile import RegisterFile
+from Cache import Cache
+from IFUnit import IFUnit
 
 
 class SimplifiedSuperScalarSimulator:
@@ -16,48 +18,47 @@ class SimplifiedSuperScalarSimulator:
         self.__memory = data
         self.__outfile = outfile
 
-        self.__cu = ControlUnit()
-        self.__wb = WriteBackUnit()
+        self.__register_file = RegisterFile(num_registers)
+        self.__wb = WriteBackUnit(self.__register_file)
+        self.__cache = Cache(self.__memory)
         self.__alu = ALU()
-        self.__mem = MemoryUnit()
-
-        self.__register_file = [0] * num_registers
+        self.__mem = MemoryUnit(self.__cache)
+        self.__if = IFUnit(self.__pc, self.__instructions, self.__cache)
 
         # Buffers
-        self.__pre_issue_buffer = Queue()
+        self.__pre_issue_buffer = Queue(maxsize=4)
 
-        self.__pre_mem_buffer = Queue()
+        self.__pre_mem_buffer = Queue(maxsize=2)
 
         # arg1, arg2
-        self.__pre_alu_buffer = Queue()
+        self.__pre_alu_buffer = Queue(maxsize=2)
 
         # inst id, value, dest
-        self.__post_mem_buffer = Queue()
+        self.__post_mem_buffer = Queue(maxsize=1)
 
         # inst id, value
-        self.__post_alu_buffer = Queue()
+        self.__post_alu_buffer = Queue(maxsize=1)
 
     def run(self):
-        for inst in self.__instructions:
-
-            # Get control signals
-            control = self.__cu.run(inst)
+        inst = None
+        while self.__pc in self.__instructions.keys():
 
             # Run WriteBackUnit
-            wb_in = (self.__post_mem_buffer.get(), self.__post_alu_buffer.get())
-            wb_out = self.__wb.run(wb_in)
-            self.__write_register(wb_out['dest1'], wb_out['value1'])
-            self.__write_register(wb_out['dest2'], wb_out['value2'])
+            if not self.__post_mem_buffer.empty() or not self.__post_alu_buffer.empty():
+                wb_in = (self.__post_mem_buffer.get(), self.__post_alu_buffer.get())
+                self.__wb.run(wb_in)
 
             # Run ALU
-            alu_in = self.__pre_alu_buffer.get()
-            alu_out = self.__alu.run(alu_in, control)
-            self.__post_alu_buffer.put(alu_out)
+            if not self.__pre_alu_buffer.empty():
+                alu_in = self.__pre_alu_buffer.get()
+                alu_out = self.__alu.run(alu_in)
+                self.__post_alu_buffer.put(alu_out)
 
             # Run MemoryUnit
-            mem_in = self.__pre_mem_buffer.get()
-            mem_out = self.__mem.run(mem_in, control)
-            self.__post_mem_buffer.put(mem_out)
+            if not self.__pre_mem_buffer.empty():
+                mem_in = self.__pre_mem_buffer.get()
+                mem_out = self.__mem.run(mem_in)
+                self.__post_mem_buffer.put(mem_out)
 
             # Run Issue Unit
 
@@ -65,13 +66,9 @@ class SimplifiedSuperScalarSimulator:
 
 
 
-    def __write_register(self, r, val):
-        if r is None or val is None:
-            pass
-        self.__register_file[r] = val
 
     def __read_cache(self, addr):
-
+        pass
 
 
 if __name__ == "__main__":
