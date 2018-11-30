@@ -12,16 +12,27 @@ class IFUnit:
         except KeyError:
             return False
 
+        # If cache miss
         if not insts:
-            return pc
-        elif num_inst == 1:
-            out = Disassembler.process(insts[0]) if pc % 8 == 0 else Disassembler.process(insts[1])
-            out['id'] = (pc - 96) / 4
-            return out
+            return False
         else:
-            out1 = Disassembler.process(insts[0])
-            out1['id'] = (pc - 96) / 4
-            out2 = Disassembler.process(insts[1])
-            out2['id'] = (pc - 96) / 4 + 4
-            return out1, out2
+            if num_inst == 1:
+                if insts[0] == Disassembler.break_inst:
+                    return False
+                else:
+                    out = Disassembler.process(insts[0]) if pc % 8 == 0 else Disassembler.process(insts[1])
+                    out['id'] = (pc - 96) / 4
+                    return out
+            else:
+                out1 = Disassembler.process(insts[0])
+                out1['id'] = (pc - 96) / 4
+                out2 = Disassembler.process(insts[1])
+                out2['id'] = (pc - 96) / 4 + 1
+
+                if insts[0] == Disassembler.break_inst:
+                    return False
+                elif insts[1] == Disassembler.break_inst:
+                    return out1,
+                else:
+                    return out1, out2
 

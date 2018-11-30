@@ -9,13 +9,15 @@ class MemoryUnit:
             return {
                 'id': mem_in['id'],
                 'rn': None,
-                'value': None
+                'value': None,
+                'assembly': mem_in['assembly']
             }
         else:
             return {
                 'id': mem_in['id'],
                 'rn': mem_in['rn'],
-                'value': self.__load(mem_in)
+                'value': self.__load(mem_in),
+                'assembly': mem_in['assembly']
             }
 
     def __store(self, mem_in):

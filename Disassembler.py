@@ -104,6 +104,11 @@ class Disassembler:
         rn = Disassembler.get_bits_as_decimal(9, 5, inst_dec)
         rd = Disassembler.get_bits_as_decimal(4, 0, inst_dec)
 
+        if inst_name == 'LSL' or inst_name == 'LSR' or inst_name == 'ASR':
+            assembly = '{}\tR{}, R{}, #{}'.format(inst_name, rd, rn, shamt)
+        else:
+            assembly = '{}\tR{}, R{}, R{}'.format(inst_name, rd, rn, rm)
+
         return {
             'name': inst_name,
             'type': 'R',
@@ -112,6 +117,7 @@ class Disassembler:
             'shamt': shamt,
             'rn': rn,
             'rd': rd,
+            'assembly': assembly
         }
     
     @staticmethod
@@ -123,6 +129,8 @@ class Disassembler:
         rn = Disassembler.get_bits_as_decimal(9, 5, inst_dec)
         rt = Disassembler.get_bits_as_decimal(4, 0, inst_dec)
 
+        assembly = '{}\tR{}, [R{}, #{}]'.format(inst_name, rt, rn, offset)
+
         return {
             'name': inst_name,
             'type': 'D',
@@ -131,15 +139,18 @@ class Disassembler:
             'op2': op2,
             'rn': rn,
             'rt': rt,
+            'assembly': assembly
         }
 
     @staticmethod
-    def __process_i(self, inst_dec, inst_name):
+    def __process_i(inst_dec, inst_name):
         # Extract fields from machine instruction
         opcode = Disassembler.get_bits_as_decimal(31, 22, inst_dec)
         immediate = Disassembler.tc_to_dec('{0:012b}'.format(Disassembler.get_bits_as_decimal(21, 10, inst_dec)))
         rn = Disassembler.get_bits_as_decimal(9, 5, inst_dec)
         rd = Disassembler.get_bits_as_decimal(4, 0, inst_dec)
+
+        assembly = '{}\tR{}, R{}, #{}'.format(inst_name, rd, rn, immediate)
 
         return {
             'name': inst_name,
@@ -149,27 +160,33 @@ class Disassembler:
             'immediate': immediate,
             'rn': rn,
             'rd': rd,
+            'assembly': assembly
         }
 
     @staticmethod
-    def __process_b(self, inst_dec, inst_name):
+    def __process_b(inst_dec, inst_name):
         # Extract fields from machine instruction
         opcode = Disassembler.get_bits_as_decimal(31, 24, inst_dec)
         address = Disassembler.get_bits_as_decimal(23, 0, inst_dec, signed=True)
+
+        assembly = '{}\t#{}'.format(inst_name, address)
 
         return {
             'name': inst_name,
             'type': 'B',
             'opcode': opcode,
             'offset': address,
+            'assembly': assembly
         }
 
     @staticmethod
-    def __process_cb(self, inst_dec, inst_name):
+    def __process_cb(inst_dec, inst_name):
         # Extract fields from machine instruction
         opcode = Disassembler.get_bits_as_decimal(31, 24, inst_dec)
         offset = Disassembler.get_bits_as_decimal(23, 5, inst_dec, signed=True)
         rt = Disassembler.get_bits_as_decimal(4, 0, inst_dec)
+
+        assembly = '{}\tR{}, #{}'.format(inst_name, rt, offset)
 
         return {
             'name': inst_name,
@@ -177,15 +194,18 @@ class Disassembler:
             'opcode': opcode,
             'offset': offset,
             'rt': rt,
+            'assembly': assembly
         }
 
     @staticmethod
-    def __process_im(self, inst_dec, inst_name):
+    def __process_im(inst_dec, inst_name):
         # Extract fields from machine instruction
         opcode = Disassembler.get_bits_as_decimal(31, 23, inst_dec)
         shamt = Disassembler.get_bits_as_decimal(22, 21, inst_dec)
         immediate = Disassembler.get_bits_as_decimal(20, 5, inst_dec)
         rd = Disassembler.get_bits_as_decimal(4, 0, inst_dec)
+
+        assembly = '{}\tR{}, {}, LSL {}'.format(inst_name, rd, immediate, shift * 16)
 
         return {
             'name': inst_name,
@@ -194,10 +214,11 @@ class Disassembler:
             'shamt': shamt,
             'immediate': immediate,
             'rd': rd,
+            'assembly': assembly
         }
 
     @staticmethod
-    def __process_nop(self, inst_dec, inst_name):
+    def __process_nop(inst_dec, inst_name):
         # TODO How should we change this for Project 3?
         # If the instruction isn't all 0s, raise error because opcode is zero -> invalid instruction
         if inst_dec != 0:
@@ -211,7 +232,7 @@ class Disassembler:
         }
 
     @staticmethod
-    def __process_break(self, inst_dec, inst_name):
+    def __process_break(inst_dec, inst_name):
         # TODO How should we change this for Project 3?
         
         return {

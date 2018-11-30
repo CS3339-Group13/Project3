@@ -6,12 +6,20 @@ class WriteBackUnit:
     def run(self, wb_in, source):
 
         if source == 'mem':
-            id = wb_in[0]['id']
-            dest = wb_in[0]['rn']
-            value = wb_in[0]['value']
-        else:
-            id = wb_in[1]['id']
-            dest = wb_in[1]['rd']
-            value = wb_in[1]['value']
+            id = wb_in['id']
+            dest = wb_in['rn']
+            value = wb_in['value']
+            self.__register_file.write_register(dest, value)
 
-        self.__register_file.write_register(dest, value)
+        else:
+            id = wb_in['id']
+            dest = wb_in['rd']
+            value = wb_in['value']
+
+            if wb_in['keep']:
+                curr = self.__register_file.read_register(dest)
+                value = (curr & wb_in['keep']) | value
+                self.__register_file.__write_register(dest, value)
+            else:
+                self.__register_file.write_register(dest, value)
+

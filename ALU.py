@@ -4,17 +4,29 @@ class ALU:
         pass
 
     def run(self, alu_in):
-        arg1 = alu_in['rn']
-        # If no shamt, use rm, otherwise use shamt
-        arg2 = alu_in['rm'] if alu_in['shamt'] is None else alu_in['shamt']
+        op = alu_in['op'].lower()
 
-        op = alu_in['op']
-        f = getattr(self, 'op_' + op.lower())
+        # im instruction
+        if alu_in['rn_val'] is None:
+            arg1 = alu_in['imm_val']
+            arg2 = alu_in['shamt_val']
+        # i instruction
+        elif 'imm_val' in alu_in.keys():
+                arg1 = alu_in['rn_val']
+                arg2 = alu_in['imm_val']
+        # r instruction
+        else:
+            arg1 = alu_in['rn_val']
+            arg2 = alu_in['rm_val']
+
+        f = getattr(self, 'op_' + op)
 
         return {
             'id': alu_in['id'],
             'rd': alu_in['rd'],
-            'value': f(arg1, arg2)
+            'keep': (0x000000000000FFFF << (alu_in['shamt'] * 16)) ^ 0xFFFFFFFFFFFFFFFF if op == 'movk' else None,
+            'value': f(arg1, arg2),
+            'assembly': alu_in['assembly']
         }
 
     @staticmethod
@@ -24,6 +36,10 @@ class ALU:
     @staticmethod
     def op_add(arg1, arg2):
         return arg1 + arg2
+
+    @staticmethod
+    def op_addi(arg1, arg2):
+        return ALU.op_add(arg1, arg2)
 
     @staticmethod
     def op_orr(arg1, arg2):
@@ -48,3 +64,11 @@ class ALU:
     @staticmethod
     def op_lsl(arg1, shamt):
         return arg1 << shamt
+
+    @staticmethod
+    def op_movz(arg1, shamt):
+        return ALU.op_lsl(arg1, shamt)
+
+    @staticmethod
+    def op_movk(arg1, shamt):
+        return ALU.op_lsl(arg1, shamt)

@@ -1,26 +1,84 @@
 class Cache:
 
     def __init__(self, memory):
-        block = {
-            'valid': False,
-            'dirty': False,
-            'tag': None,
-            'content': (None, None)
-        }
 
-        set = {
-            'lru': 0, # 0 or 1
-            'blocks': (block, block)
-        }
+        self.__cache = (
+            {
+                'lru': 0,  # 0 or 1
+                'blocks': (
+                    {
+                        'valid': False,
+                        'dirty': False,
+                        'tag': 0,
+                        'content': (0, 0)
+                    },
+                    {
+                        'valid': False,
+                        'dirty': False,
+                        'tag': 0,
+                        'content': (0, 0)
+                    }
+                )
+            },
+            {
+                'lru': 0,  # 0 or 1
+                'blocks': (
+                    {
+                        'valid': False,
+                        'dirty': False,
+                        'tag': 0,
+                        'content': (0, 0)
+                    },
+                    {
+                        'valid': False,
+                        'dirty': False,
+                        'tag': 0,
+                        'content': (0, 0)
+                    }
+                )
+            },
+            {
+                'lru': 0,  # 0 or 1
+                'blocks': (
+                    {
+                        'valid': False,
+                        'dirty': False,
+                        'tag': 0,
+                        'content': (0, 0)
+                    },
+                    {
+                        'valid': False,
+                        'dirty': False,
+                        'tag': 0,
+                        'content': (0, 0)
+                    }
+                )
+            },
+            {
+                'lru': 0,  # 0 or 1
+                'blocks': (
+                    {
+                        'valid': False,
+                        'dirty': False,
+                        'tag': 0,
+                        'content': (0, 0)
+                    },
+                    {
+                        'valid': False,
+                        'dirty': False,
+                        'tag': 0,
+                        'content': (0, 0)
+                    }
+                )
+            }
+        )
 
-        self.__cache = (set, set, set, set)
         self.__memory = memory
 
     def read(self, address):
         address_str = '{0:032b}'.format(address)
         tag = int(address_str[0:27], 2)
         set_index = int(address_str[27:29], 2)
-        # block_offset = int(address_str[29:30], 2)
 
         set = self.__cache[set_index]
 
@@ -71,6 +129,9 @@ class Cache:
             block['content'] = values
             set['lru'] ^= 1
             return True
+
+    def get_cache(self):
+        return self.__cache
 
     @staticmethod
     def __is_full(set):
