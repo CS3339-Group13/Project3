@@ -75,6 +75,15 @@ class Cache:
 
         self.__memory = memory
 
+    def load(self, address):
+        if address % 8 == 0:
+            next_address = address + 4
+        else:
+            next_address = address
+            address = next_address - 4
+        values = (self.__memory[address], self.__memory[next_address])
+        self.write(address, values)
+
     def read(self, address):
         address_str = '{0:032b}'.format(address)
         tag = int(address_str[0:27], 2)
@@ -87,14 +96,7 @@ class Cache:
                 set['lru'] = b
                 return block['content']
 
-        # If cache miss, go get from memory
-        if address % 8 == 0:
-            next_address = address + 4
-        else:
-            next_address = address
-            address = next_address - 4
-        values = (self.__memory[address], self.__memory[next_address])
-        self.write(address, values)
+        # If cache miss, return False
         return False
 
     def write(self, address, values):

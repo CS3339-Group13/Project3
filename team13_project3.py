@@ -25,15 +25,6 @@ class SimplifiedSuperScalarSimulator:
         self.__memory = {}
         self.__last_inst = 0
 
-
-        self.__register_file = RegisterFile(num_registers)
-        self.__wb = WriteBackUnit(self.__register_file)
-        self.__cache = Cache(self.__memory)
-        self.__alu = ALU()
-        self.__mem = MemoryUnit(self.__cache)
-        self.__if = IFUnit(self.__cache)
-        self.__iu = IssueUnit(self.__register_file)
-
         self.pre_issue_size = 4
         self.pre_alu_size = 2
         self.pre_mem_size = 2
@@ -47,6 +38,17 @@ class SimplifiedSuperScalarSimulator:
 
         self.__post_mem_buffer = deque(maxlen=self.post_mem_size)
         self.__post_alu_buffer = deque(maxlen=self.post_alu_size)
+
+        self.__register_file = RegisterFile(num_registers)
+        self.__wb = WriteBackUnit(self.__register_file)
+        self.__cache = Cache(self.__memory)
+        self.__alu = ALU()
+        self.__mem = MemoryUnit(self.__cache)
+        self.__if = IFUnit(self.__cache)
+        self.__iu = IssueUnit(self.__register_file, self.__pre_issue_buffer,
+                              self.__pre_mem_buffer, self.__pre_alu_buffer,
+                              self.__post_mem_buffer, self.__post_alu_buffer
+        )
 
         self.__read_file()
 
@@ -89,9 +91,6 @@ class SimplifiedSuperScalarSimulator:
             run = False
 
             self.__cycle += 1
-            self.__print_state()
-
-            print self.__cycle
 
             # Run WriteBackUnit
             if len(self.__post_mem_buffer) > 0:
@@ -126,20 +125,20 @@ class SimplifiedSuperScalarSimulator:
             # Run Issue Unit (twice)
             # TODO Hazard detection
             for x in range(2):
-                # If pre-buffer not empty
-                if len(self.__pre_issue_buffer) > 0:
-                    inst = self.__iu.run(self.__pre_issue_buffer.popleft())
-
-                    if self.__pre_alu_space > 0 and inst[1] == 'alu':
-                        self.__pre_alu_buffer.append(inst[0])
-                    if self.__pre_mem_space > 0 and inst[1] == 'mem':
-                        self.__pre_mem_buffer.append(inst[0])
-                    run = True
+                inst = self.__iu.run()
+                if self.__pre_alu_space > 0 and inst[1] == 'alu':
+                    self.__pre_alu_buffer.append(inst[0])
+                elif self.__pre_mem_space > 0 and inst[1] == 'mem':
+                    self.__pre_mem_buffer.append(inst[0])
+                elif inst[1] == 'stall':
+                    continue
+                run = True
 
             self.__update_space()
 
             # Run IF Unit
             # If pre-issue buffer not full
+            insts = True
             if self.__pc < self.__last_inst:
                 if self.__pre_issue_space == 0:
                     continue
@@ -153,6 +152,10 @@ class SimplifiedSuperScalarSimulator:
                 run = True
 
             self.__update_space()
+            self.__print_state()
+
+            if not insts:
+                self.__cache.load(self.__pc)
 
         self.__print_state()
 

@@ -1,10 +1,14 @@
 class IssueUnit:
 
-    def __init__(self, register_file):
+    def __init__(self, register_file, pre_issue_buffer, pre_mem_buffer, pre_alu_buffer, post_mem_buffer, post_alu_buffer):
         self.__register_file = register_file
+        self.__pre_issue_buffer = pre_issue_buffer
+        self.__pre_mem_buffer = pre_mem_buffer
+        self.__pre_alu_buffer = pre_alu_buffer
+        self.__post_mem_buffer = post_mem_buffer
+        self.__post_alu_buffer = post_alu_buffer
 
-    def run(self, issue_in):
-
+    def __issue(self, issue_in):
         type = issue_in['type'].lower()
 
         if type == 'd':
@@ -37,3 +41,54 @@ class IssueUnit:
                 out['imm_val'] = issue_in['immediate']
                 out['shamt_val'] = issue_in['shamt']
             return out, 'alu'
+
+    def __check_raw_mem(self, to_issue):
+        """
+        Checks for RAW hazards between the Pre-Issue buffer and the Pre-Mem buffer.
+        :param to_issue: The instruction we are trying to issue.
+        :return: True if there is a RAW hazard, false otherwise.
+        """
+        # Set up sources
+        src1 = to_issue['rn']
+        src2 = to_issue['rt'] if to_issue['name'] == 'STUR' else None
+
+        for inst in self.__pre_mem_buffer:
+            dest = to_issue['rt'] if to_issue['type'] == 'LDUR' else None
+            if src1 == dest or src2 == dest:
+                return True
+
+        return False
+
+    def __check_raw_alu(self, to_issue):
+        """
+        Checks for RAW hazards between the Pre-Issue buffer and the Pre-ALU buffer.
+        :param to_issue: The instruction we are trying to issue.
+        :return: True if there is a RAW hazard, false otherwise.
+        """
+        if to_issue['type'] == 'IM':
+            return False
+
+        # Set up sources
+        src1 = to_issue['rn']
+        src2 = to_issue['rm'] if to_issue['type'] == 'R' else None
+
+        for inst in self.__pre_alu_buffer:
+            dest = inst['rd']
+            if src1 == dest or src2 == dest:
+                return True
+
+        return False
+
+    def run(self):
+        if len(self.__pre_issue_buffer) == 0:
+            return {}, 'stall'
+        else:
+            for i, inst in enumerate(self.__pre_issue_buffer):
+                issue = True
+
+                # Check for RAW hazards in Pre-Mem and Pre-ALU
+                if self.__check_raw_mem(inst) or self.__check_raw_alu(inst):
+                    return {}, 'stall'
+                else:
+                    del self.__pre_issue_buffer[i]
+                    return self.__issue(inst)
