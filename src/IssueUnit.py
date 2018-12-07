@@ -20,7 +20,8 @@ class IssueUnit:
                 'offset': issue_in['offset'],
                 'rn_val': self.__register_file.read_register(issue_in['rn']),
                 'mem_write': True if issue_in['name'] == 'STUR' else False,
-                'assembly': issue_in['assembly']
+                'assembly': issue_in['assembly'],
+                'name': issue_in['name']
             }, 'mem'
         else:
             out = {
@@ -55,7 +56,7 @@ class IssueUnit:
         src2 = to_issue['rt'] if to_issue['name'] == 'STUR' else None
 
         for inst in chain(self.__pre_mem_buffer, self.__post_mem_buffer):
-            dest = inst['rt'] if inst['type'] == 'LDUR' else None
+            dest = inst['rt'] if inst['name'] == 'LDUR' else None
             if src1 == dest or src2 == dest:
                 return True
 

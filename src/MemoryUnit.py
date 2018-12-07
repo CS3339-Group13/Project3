@@ -4,33 +4,28 @@ class MemoryUnit:
         self.__cache = cache
 
     def run(self, mem_in):
-        if mem_in['mem_write']:
+        if mem_in['name'] == 'STUR':
             self.__store(mem_in)
-            return {
-                'id': mem_in['id'],
-                'rn': None,
-                'value': None,
-                'assembly': mem_in['assembly']
-            }
         else:
             return {
                 'id': mem_in['id'],
                 'rn': mem_in['rn'],
                 'value': self.__load(mem_in),
-                'assembly': mem_in['assembly']
+                'assembly': mem_in['assembly'],
+                'name': mem_in['name']
             }
 
     def __store(self, mem_in):
         id = mem_in['id']
-        rt = mem_in['rt']
+        rt_val = mem_in['rt_val']
         offset = mem_in['offset']
-        rn = mem_in['rn']
+        rn_val = mem_in['rn_val']
 
-        self.__cache.write(rt + offset, rn)
+        return self.__cache.write(rn_val + offset, rt_val, False)
 
     def __load(self, mem_in):
         id = mem_in['id']
-        rt = mem_in['rt']
+        rt_val = mem_in['rt_val']
         offset = mem_in['offset']
 
-        return self.__cache.read(rt + offset)
+        return self.__cache.read(rt_val + offset)

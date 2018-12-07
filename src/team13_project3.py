@@ -39,6 +39,8 @@ class SimplifiedSuperScalarSimulator:
         self.__post_mem_buffer = deque(maxlen=self.post_mem_size)
         self.__post_alu_buffer = deque(maxlen=self.post_alu_size)
 
+        self.__cache_to_load = deque(maxlen=2)
+
         self.__register_file = RegisterFile(num_registers)
         self.__wb = WriteBackUnit(self.__register_file)
         self.__cache = Cache(self.__memory)
@@ -91,6 +93,7 @@ class SimplifiedSuperScalarSimulator:
             run = False
 
             self.__cycle += 1
+            print self.__cycle
 
             # Run WriteBackUnit
             if len(self.__post_mem_buffer) > 0:
@@ -117,7 +120,10 @@ class SimplifiedSuperScalarSimulator:
             if len(self.__pre_mem_buffer) > 0 and self.__post_mem_space > 0:
                 mem_in = self.__pre_mem_buffer.popleft()
                 mem_out = self.__mem.run(mem_in)
-                self.__post_mem_buffer.append(mem_out)
+                if not mem_out:
+                    self.__cache_to_load.append(mem_in['rn_val'] + mem_in['offset'])
+                elif mem_out is not None:
+                    self.__post_mem_buffer.append(mem_out)
                 run = True
 
             self.__update_space()
@@ -142,13 +148,16 @@ class SimplifiedSuperScalarSimulator:
                 if insts:
                     self.__pc += len(insts) * 4
                     self.__pre_issue_buffer.extend(insts)
+                else:
+                    self.__cache_to_load.append(self.__pc)
                 run = True
 
             self.__update_space()
             self.__print_state()
 
-            if not insts:
-                self.__cache.load(self.__pc)
+            while len(self.__cache_to_load) > 0:
+                address = self.__cache_to_load.popleft()
+                self.__cache.load(address)
 
     def __print_buffer(self, buffer):
         for i in range(buffer.maxlen):
@@ -194,14 +203,14 @@ class SimplifiedSuperScalarSimulator:
         for s, set in enumerate(self.__cache.get_cache()):
             self.__f.write('Set {}: LRU={}\n'.format(s, set['lru']))
             for b, block in enumerate(set['blocks']):
-                self.__f.write('\tEntry {}:[({},{},{})<{},{}>]\n'.format(
-                    b,
-                    int(block['valid']),
-                    int(block['dirty']),
-                    int(block['tag']),
-                    '{0:032b}'.format(block['content'][0]) if block['content'][0] != 0 else '0',
-                    '{0:032b}'.format(block['content'][1]) if block['content'][1] != 0 else '0'
-                ))
+                valid = int(block['valid'])
+                dirty = int(block['dirty'])
+                tag = int(block['tag']) if block['tag'] is not None else '0'
+                content1 = '{0:032b}'.format(block['content'][0]) if (block['content'][0] != 0 and block['content'][0] is not None) else '0'
+                content2 = '{0:032b}'.format(block['content'][1]) if (block['content'][1] != 0 and block['content'][1] is not None) else '0'
+
+                self.__f.write('\tEntry {}:[({},{},{})<{},{}>]\n'.format(b, valid, dirty, tag, content1, content2))
+
         self.__f.write('\n')
 
     def __print_memory(self):

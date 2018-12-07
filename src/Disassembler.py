@@ -88,7 +88,6 @@ class Disassembler:
         for (low, high), inst_info in Disassembler.opcode_dict.items():
             # Once correct range found, call appropriate function
             if low <= opcode <= high:
-                valid = True
                 f = getattr(Disassembler, '_Disassembler__process_' + inst_info[0].lower())
                 return f(inst_dec, inst_info[1])
 

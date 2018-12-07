@@ -81,8 +81,10 @@ class Cache:
         else:
             next_address = address
             address = next_address - 4
-        values = (self.__memory[address], self.__memory[next_address])
-        self.write(address, values, True)
+
+        val1 = self.__memory[address] if address in self.__memory.keys() else 0
+        val2 = self.__memory[next_address]if next_address in self.__memory.keys() else 0
+        self.write(address, (val1, val2), True)
 
     def read(self, address):
         address_str = '{0:032b}'.format(address)
@@ -99,7 +101,7 @@ class Cache:
         # If cache miss, return False
         return False
 
-    def write(self, address, values, is_load):
+    def write(self, address, values, is_allocate):
         address_str = '{0:032b}'.format(address)
         tag = int(address_str[0:27], 2)
         set_index = int(address_str[27:29], 2)
@@ -110,8 +112,20 @@ class Cache:
         block_index = set['lru']
         block = set['blocks'][block_index]
 
+        # If we are allocating, get stuff from memory
+        if is_allocate:
+            block['valid'] = True
+            block['dirty'] = False
+            block['tag'] = tag
+            block['content'] = values
+            set['lru'] ^= 1
+            return True
+
+        # If not valid, cache miss so return False
+        elif not block['valid']:
+            return False
         # If set is full, kick out least recently used and return
-        if self.__is_full(set):
+        elif self.__is_full(set):
 
             # If dirty bit set, write to memory
             if block['dirty']:
@@ -126,7 +140,7 @@ class Cache:
             return False
         else:
             block['valid'] = True
-            block['dirty'] = False if is_load else True
+            block['dirty'] = True
             block['tag'] = tag
             block['content'] = values
             set['lru'] ^= 1
