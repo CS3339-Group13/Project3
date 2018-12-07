@@ -82,7 +82,7 @@ class Cache:
             next_address = address
             address = next_address - 4
         values = (self.__memory[address], self.__memory[next_address])
-        self.write(address, values)
+        self.write(address, values, True)
 
     def read(self, address):
         address_str = '{0:032b}'.format(address)
@@ -93,13 +93,13 @@ class Cache:
 
         for b, block in enumerate(set['blocks']):
             if tag == block['tag']:
-                set['lru'] = b
+                set['lru'] = b ^ 1
                 return block['content']
 
         # If cache miss, return False
         return False
 
-    def write(self, address, values):
+    def write(self, address, values, is_load):
         address_str = '{0:032b}'.format(address)
         tag = int(address_str[0:27], 2)
         set_index = int(address_str[27:29], 2)
@@ -126,7 +126,7 @@ class Cache:
             return False
         else:
             block['valid'] = True
-            block['dirty'] = True
+            block['dirty'] = False if is_load else True
             block['tag'] = tag
             block['content'] = values
             set['lru'] ^= 1

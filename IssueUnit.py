@@ -1,3 +1,5 @@
+from itertools import chain
+
 class IssueUnit:
 
     def __init__(self, register_file, pre_issue_buffer, pre_mem_buffer, pre_alu_buffer, post_mem_buffer, post_alu_buffer):
@@ -52,8 +54,8 @@ class IssueUnit:
         src1 = to_issue['rn']
         src2 = to_issue['rt'] if to_issue['name'] == 'STUR' else None
 
-        for inst in self.__pre_mem_buffer:
-            dest = to_issue['rt'] if to_issue['type'] == 'LDUR' else None
+        for inst in chain(self.__pre_mem_buffer, self.__post_mem_buffer):
+            dest = inst['rt'] if inst['type'] == 'LDUR' else None
             if src1 == dest or src2 == dest:
                 return True
 
@@ -72,23 +74,37 @@ class IssueUnit:
         src1 = to_issue['rn']
         src2 = to_issue['rm'] if to_issue['type'] == 'R' else None
 
-        for inst in self.__pre_alu_buffer:
+        for inst in chain(self.__pre_alu_buffer, self.__post_alu_buffer):
             dest = inst['rd']
             if src1 == dest or src2 == dest:
                 return True
 
         return False
 
-    def run(self):
+    def run(self, pre_mem_space, pre_alu_space):
+        count = 0
         if len(self.__pre_issue_buffer) == 0:
-            return {}, 'stall'
+            return
         else:
-            for i, inst in enumerate(self.__pre_issue_buffer):
-                issue = True
+            i = 0
+            while i < len(self.__pre_issue_buffer) and count < 2:
+                inst = self.__pre_issue_buffer[i]
 
                 # Check for RAW hazards in Pre-Mem and Pre-ALU
                 if self.__check_raw_mem(inst) or self.__check_raw_alu(inst):
-                    return {}, 'stall'
+                    return
                 else:
-                    del self.__pre_issue_buffer[i]
-                    return self.__issue(inst)
+                    inst = self.__issue(inst)
+                    if pre_alu_space > 0 and inst[1] == 'alu':
+                        del self.__pre_issue_buffer[i]
+                        self.__pre_alu_buffer.append(inst[0])
+                        pre_alu_space -= 1
+                        count += 1
+                    elif pre_mem_space > 0 and inst[1] == 'mem':
+                        del self.__pre_issue_buffer[i]
+                        self.__pre_mem_buffer.append(inst[0])
+                        pre_mem_space -= 1
+                        count += 1
+                    else:
+                        i += 1
+                        continue

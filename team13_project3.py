@@ -11,7 +11,7 @@ from IssueUnit import IssueUnit
 
 
 class SimplifiedSuperScalarSimulator:
-    
+
     def __init__(self, infile, outfile, num_registers=32):
         self.__disassembler = Disassembler()
 
@@ -48,7 +48,7 @@ class SimplifiedSuperScalarSimulator:
         self.__iu = IssueUnit(self.__register_file, self.__pre_issue_buffer,
                               self.__pre_mem_buffer, self.__pre_alu_buffer,
                               self.__post_mem_buffer, self.__post_alu_buffer
-        )
+                              )
 
         self.__read_file()
 
@@ -79,10 +79,10 @@ class SimplifiedSuperScalarSimulator:
         #     self.__post_alu_space, \
         #     self.__post_mem_space
         return self.__pre_issue_space == 4 and \
-            self.__pre_alu_space == 2 and \
-            self.__pre_mem_space == 2 and \
-            self.__post_alu_space == 1 and \
-            self.__post_mem_space == 1
+               self.__pre_alu_space == 2 and \
+               self.__pre_mem_space == 2 and \
+               self.__post_alu_space == 1 and \
+               self.__post_mem_space == 1
 
     def run(self):
         run = True
@@ -124,17 +124,10 @@ class SimplifiedSuperScalarSimulator:
 
             # Run Issue Unit (twice)
             # TODO Hazard detection
-            for x in range(2):
-                inst = self.__iu.run()
-                if self.__pre_alu_space > 0 and inst[1] == 'alu':
-                    self.__pre_alu_buffer.append(inst[0])
-                elif self.__pre_mem_space > 0 and inst[1] == 'mem':
-                    self.__pre_mem_buffer.append(inst[0])
-                elif inst[1] == 'stall':
-                    continue
+            if len(self.__pre_issue_buffer) > 0:
+                self.__iu.run(self.__pre_mem_space, self.__pre_alu_space)
                 run = True
-
-            self.__update_space()
+                self.__update_space()
 
             # Run IF Unit
             # If pre-issue buffer not full
@@ -157,15 +150,16 @@ class SimplifiedSuperScalarSimulator:
             if not insts:
                 self.__cache.load(self.__pc)
 
-        self.__print_state()
-
     def __print_buffer(self, buffer):
         for i in range(buffer.maxlen):
             try:
                 item = '[' + buffer[i]['assembly'] + ']'
             except IndexError:
                 item = ''
-            self.__f.write('\tEntry {}:\t{}\n'.format(i, item))
+            if item == '':
+                self.__f.write('\tEntry {}:\n'.format(i, item))
+            else:
+                self.__f.write('\tEntry {}:\t{}\n'.format(i, item))
 
     def __print_buffers(self):
         self.__f.write('Pre-Issue Buffer:\n')
@@ -184,7 +178,6 @@ class SimplifiedSuperScalarSimulator:
         self.__print_buffer(self.__post_mem_buffer)
 
         self.__f.write('\n')
-
 
     def __print_registers(self):
         self.__f.write('Registers\n')
@@ -211,15 +204,45 @@ class SimplifiedSuperScalarSimulator:
                 ))
         self.__f.write('\n')
 
+    def __print_memory(self):
+        self.__f.write('Data\n')
+
+        # Filter data out of memory
+        data = dict(self.__memory)
+        for a in range(96, self.__last_inst + 4, 4):
+            del data[a]
+
+        # Fix stupid formatting, thanks Greg
+        if len(data) > 0:
+            # Add 0s from beginning to first
+            first_data = min(data.keys())
+            for a in range(self.__last_inst + 4, first_data, 4):
+                data[a] = 0
+
+            # Add 0s from last to end of line
+            last_data = max(data.keys())
+            a = last_data + 4
+            while (a - first_data) % 8 != 0:
+                data[a] = 0
+                a += 4
+
+        # Print useful information
+        addresses = list(data.keys())
+        addresses.sort()
+        for i, addr in enumerate(addresses):
+            if i % 8 == 0:
+                self.__f.write('\n{}:\t{}'.format(addr, data[addr]))
+            else:
+                self.__f.write('\t{}'.format(data[addr]))
+        self.__f.write('\n' * 2)
+
     def __print_state(self):
-        self.__f.write('-' * 20 + '\n\n')
-        self.__f.write('Cycle:{}\n'.format(self.__cycle))
+        self.__f.write('-' * 20 + '\n')
+        self.__f.write('Cycle:{}\n\n'.format(self.__cycle))
         self.__print_buffers()
         self.__print_registers()
         self.__print_cache()
-        # self.__print_memory()
-
-
+        self.__print_memory()
 
 
 if __name__ == "__main__":
