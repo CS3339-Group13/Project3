@@ -9,7 +9,8 @@ class MemoryUnit:
         else:
             return {
                 'id': mem_in['id'],
-                'rn': mem_in['rn'],
+                'rn_val': mem_in['rn_val'],
+                'rt': mem_in['rt'],
                 'value': self.__load(mem_in),
                 'assembly': mem_in['assembly'],
                 'name': mem_in['name']
@@ -25,7 +26,9 @@ class MemoryUnit:
 
     def __load(self, mem_in):
         id = mem_in['id']
-        rt_val = mem_in['rt_val']
+        rn_val = mem_in['rn_val']
         offset = mem_in['offset']
+        address = rn_val + offset
 
-        return self.__cache.read(rt_val + offset)
+        values = self.__cache.read(address)
+        return values[0] if address % 8 == 0 else values[1]

@@ -46,7 +46,7 @@ class SimplifiedSuperScalarSimulator:
         self.__cache = Cache(self.__memory)
         self.__alu = ALU()
         self.__mem = MemoryUnit(self.__cache)
-        self.__if = IFUnit(self.__cache)
+        self.__if = IFUnit(self.__cache, self.__register_file)
         self.__iu = IssueUnit(self.__register_file, self.__pre_issue_buffer,
                               self.__pre_mem_buffer, self.__pre_alu_buffer,
                               self.__post_mem_buffer, self.__post_alu_buffer
@@ -137,19 +137,21 @@ class SimplifiedSuperScalarSimulator:
 
             # Run IF Unit
             # If pre-issue buffer not full
-            insts = True
+            result = True
             if self.__pc < self.__last_inst:
                 if self.__pre_issue_space == 0:
                     continue
                 elif self.__pre_issue_space == 1:
-                    insts = self.__if.run(self.__pc, 1)
+                    result = self.__if.run(self.__pc, 1)
                 else:
-                    insts = self.__if.run(self.__pc, 2)
-                if insts:
-                    self.__pc += len(insts) * 4
-                    self.__pre_issue_buffer.extend(insts)
-                else:
+                    result = self.__if.run(self.__pc, 2)
+                if not result:
                     self.__cache_to_load.append(self.__pc)
+                else:
+                    insts = result[0]
+                    self.__pc = result[1]
+                    for inst in insts:
+                        self.__pre_issue_buffer.append(inst)
                 run = True
 
             self.__update_space()

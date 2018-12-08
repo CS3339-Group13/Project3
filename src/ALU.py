@@ -12,9 +12,14 @@ class ALU:
             arg2 = alu_in['shamt_val']
         # i instruction
         elif 'imm_val' in alu_in.keys():
-                arg1 = alu_in['rn_val']
-                arg2 = alu_in['imm_val']
+            arg1 = alu_in['rn_val']
+            arg2 = alu_in['imm_val']
         # r instruction
+        # shift
+        elif op == 'lsl' or op == 'lsr' or op == 'asr':
+            arg1 = alu_in['rn_val']
+            arg2 = alu_in['shamt']
+        # other
         else:
             arg1 = alu_in['rn_val']
             arg2 = alu_in['rm_val']
@@ -24,7 +29,7 @@ class ALU:
         return {
             'id': alu_in['id'],
             'rd': alu_in['rd'],
-            'keep': (0x000000000000FFFF << (alu_in['shamt'] * 16)) ^ 0xFFFFFFFFFFFFFFFF if op == 'movk' else None,
+            'keep': (0x000000000000FFFF << (alu_in['shamt_val'] * 16)) ^ 0xFFFFFFFFFFFFFFFF if op == 'movk' else None,
             'value': f(arg1, arg2),
             'assembly': alu_in['assembly']
         }
@@ -54,6 +59,10 @@ class ALU:
         return arg1 - arg2
 
     @staticmethod
+    def op_subi(arg1, arg2):
+        return ALU.op_sub(arg1, arg2)
+
+    @staticmethod
     def op_asr(arg1, shamt):
         return arg1 >> shamt
 
@@ -67,8 +76,8 @@ class ALU:
 
     @staticmethod
     def op_movz(arg1, shamt):
-        return ALU.op_lsl(arg1, shamt)
+        return ALU.op_lsl(arg1, shamt * 16)
 
     @staticmethod
     def op_movk(arg1, shamt):
-        return ALU.op_lsl(arg1, shamt)
+        return ALU.op_lsl(arg1, shamt * 16)

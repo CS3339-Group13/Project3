@@ -5,6 +5,7 @@ class Disassembler:
     # bit groupings for printing a spaced out instruction
     inst_spacing = [0, 8, 11, 16, 21, 26, 32]
     break_inst = 0xFEDEFFE7
+    nop_inst = 0x00000000
 
     opcode_dict = {
         (0, 0): ['NOP', 'NOP'],
@@ -204,7 +205,7 @@ class Disassembler:
         immediate = Disassembler.get_bits_as_decimal(20, 5, inst_dec)
         rd = Disassembler.get_bits_as_decimal(4, 0, inst_dec)
 
-        assembly = '{}\tR{}, {}, LSL {}'.format(inst_name, rd, immediate, shift * 16)
+        assembly = '{}\tR{}, {}, LSL {}'.format(inst_name, rd, immediate, shamt * 16)
 
         return {
             'name': inst_name,

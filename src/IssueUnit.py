@@ -17,6 +17,7 @@ class IssueUnit:
             return {
                 'id': issue_in['id'],
                 'rt_val': self.__register_file.read_register(issue_in['rt']),
+                'rt': issue_in['rt'],
                 'offset': issue_in['offset'],
                 'rn_val': self.__register_file.read_register(issue_in['rn']),
                 'mem_write': True if issue_in['name'] == 'STUR' else False,
@@ -92,7 +93,9 @@ class IssueUnit:
                 inst = self.__pre_issue_buffer[i]
 
                 # Check for RAW hazards in Pre-Mem and Pre-ALU
-                if self.__check_raw_mem(inst) or self.__check_raw_alu(inst):
+                if inst['type'] == 'D' and self.__check_raw_mem(inst):
+                    return
+                elif self.__check_raw_alu(inst):
                     return
                 else:
                     inst = self.__issue(inst)

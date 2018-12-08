@@ -7,7 +7,7 @@ class WriteBackUnit:
 
         if source == 'mem':
             id = wb_in['id']
-            dest = wb_in['rn']
+            dest = wb_in['rt']
             value = wb_in['value']
             self.__register_file.write_register(dest, value)
 
@@ -19,7 +19,7 @@ class WriteBackUnit:
             if wb_in['keep']:
                 curr = self.__register_file.read_register(dest)
                 value = (curr & wb_in['keep']) | value
-                self.__register_file.__write_register(dest, value)
+                self.__register_file.write_register(dest, value)
             else:
                 self.__register_file.write_register(dest, value)
 
